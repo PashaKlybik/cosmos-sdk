@@ -127,7 +127,8 @@ func formatTxResult(cdc *codec.Codec, resTx *ctypes.ResultTx, resBlock *ctypes.R
 }
 
 func ParseTx(cdc *codec.Codec, txBytes []byte) (sdk.Tx, error) {
-	return parseTx(cdc, txBytes)
+	tx, err := parseTx(cdc, txBytes)
+	return tx.(sdk.Tx), err
 }
 
 func parseTx(cdc *codec.Codec, txBytes []byte) (sdk.Tx, error) {
