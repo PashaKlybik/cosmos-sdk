@@ -126,9 +126,9 @@ func formatTxResult(cdc *codec.Codec, resTx *ctypes.ResultTx, resBlock *ctypes.R
 	return sdk.NewResponseResultTx(resTx, tx, resBlock.Block.Time.Format(time.RFC3339)), nil
 }
 
-func ParseTx(cdc *codec.Codec, txBytes []byte) (sdk.Tx, error) {
+func ParseTx(cdc *codec.Codec, txBytes []byte) (auth.StdTx, error) {
 	tx, err := parseTx(cdc, txBytes)
-	return tx.(sdk.Tx), err
+	return tx.(auth.StdTx), err
 }
 
 func parseTx(cdc *codec.Codec, txBytes []byte) (sdk.Tx, error) {
