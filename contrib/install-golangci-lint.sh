@@ -1,4 +1,4 @@
-make install LEDGER_ENABLED=false#!/bin/bash
+#!/bin/bash
 
 set -euo pipefail
 
