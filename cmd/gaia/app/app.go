@@ -390,9 +390,11 @@ func (h StakingHooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAd
 	h.dh.BeforeDelegationCreated(ctx, delAddr, valAddr)
 	h.sh.BeforeDelegationCreated(ctx, delAddr, valAddr)
 }
-func (h StakingHooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
+func (h StakingHooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {//(sdk.Coins) {
+	//_, _ := h.dh.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
 	h.dh.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
 	h.sh.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
+	//return coins
 }
 func (h StakingHooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
 	h.dh.BeforeDelegationRemoved(ctx, delAddr, valAddr)
