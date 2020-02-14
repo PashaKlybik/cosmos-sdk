@@ -396,7 +396,7 @@ func (state *state) send(msg interface{}, tags map[string]string) {
 	for qStr, clientSubscriptions := range state.subscriptions {
 		q := state.queries[qStr].q
 		if q.Matches(tags) {
-			for clientID, subscription := range clientSubscriptions {
+			for _, subscription := range clientSubscriptions {
 				if cap(subscription.out) == 0 {
 					// block on unbuffered channel
 					subscription.out <- Message{msg, tags}
