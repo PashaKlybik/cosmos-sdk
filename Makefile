@@ -90,10 +90,10 @@ update_gaia_lite_docs:
 	@statik -src=client/lcd/swagger-ui -dest=client/lcd -f
 
 install: go.sum check-ledger update_gaia_lite_docs
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiad
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiacli
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiareplay
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiakeyutil
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiad
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiacli
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiareplay
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiakeyutil
 
 install_debug: go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiadebug
