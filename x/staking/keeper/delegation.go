@@ -472,8 +472,8 @@ func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.In
 	if found {
 		rewardAmount := k.BeforeDelegationSharesModified(ctx, delAddr, validator.OperatorAddress)
 		if len(rewardAmount.String())!=0 {
-			logInfo = "\"cosmoshub2/reward\":{\"delegator_address\":\""+delAddr.String()+"\", \"validator_address\": \"" +
-				validator.OperatorAddress.String() +"\", \"amount\": \"" +rewardAmount.String() +"\"}"
+			logInfo =  `"cosmoshub2/reward":{"delegator_address":"` + delAddr.String() +`", "validator_address": "` +
+				validator.OperatorAddress.String() +`", "amount": "` +rewardAmount.String() +  `"}`
 		}
 
 	} else {
@@ -512,8 +512,8 @@ func (k Keeper) unbond(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValA
 	// call the before-delegation-modified hook
 	rewardAmount := k.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
 	if len(rewardAmount.String())!=0 {
-		logInfo = "\"cosmoshub2/reward\":{\"delegator_address\":\""+delAddr.String()+"\", \"validator_address\": \"" +
-			valAddr.String() +"\", \"amount\": \"" +rewardAmount.String()  +"\"}"
+		logInfo = `"cosmoshub2/reward":{"delegator_address":"`+delAddr.String()+`", "validator_address": "` +
+			valAddr.String() +`", "amount": "` +rewardAmount.String()  +`"}"`
 	}
 	// ensure that we have enough shares to remove
 	if delegation.Shares.LT(shares) {
