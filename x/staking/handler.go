@@ -141,7 +141,9 @@ func handleMsgCreateValidator(ctx sdk.Context, msg types.MsgCreateValidator, k k
 	if err != nil {
 		return err.Result()
 	}
-
+	if logInfo!="" {
+		logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+	}
 	tags := sdk.NewTags(
 		tags.DstValidator, msg.ValidatorAddress.String(),
 		tags.Moniker, msg.Description.Moniker,
@@ -218,7 +220,9 @@ func handleMsgDelegate(ctx sdk.Context, msg types.MsgDelegate, k keeper.Keeper) 
 	if err != nil {
 		return err.Result()
 	}
-
+	if logInfo!="" {
+		logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+	}
 	tags := sdk.NewTags(
 		tags.Delegator, msg.DelegatorAddress.String(),
 		tags.DstValidator, msg.ValidatorAddress.String(),
