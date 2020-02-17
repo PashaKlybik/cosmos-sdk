@@ -513,7 +513,7 @@ func (k Keeper) unbond(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValA
 	rewardAmount := k.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
 	if len(rewardAmount.String())!=0 {
 		logInfo = `{"delegator_address":"`+delAddr.String()+`", "validator_address": "` +
-			valAddr.String() +`", "amount": "` +rewardAmount.String()  +`"}"`
+			valAddr.String() +`", "amount": "` +rewardAmount.String()  +`"}`
 	}
 	// ensure that we have enough shares to remove
 	if delegation.Shares.LT(shares) {
