@@ -619,7 +619,9 @@ func (k Keeper) Undelegate(
 					return logInfo, completionTime, err
 				}
 			}
-
+			if logInfo!="" {
+				logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+			}
 			return logInfo, completionTime, nil
 		}
 
@@ -629,7 +631,9 @@ func (k Keeper) Undelegate(
 
 		ubd := k.SetUnbondingDelegationEntry(ctx, delAddr, valAddr, height, completionTime, returnAmount)
 		k.InsertUBDQueue(ctx, ubd, completionTime)
-
+		if logInfo!="" {
+			logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+		}
 		return logInfo, completionTime, nil
 	}
 
