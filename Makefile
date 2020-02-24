@@ -3,7 +3,7 @@ PACKAGES_SIMTEST=$(shell go list ./... | grep '/simulation')
 VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
 CAT := $(if $(filter $(OS),Windows_NT),type,cat)
-LEDGER_ENABLED ?= true
+LEDGER_ENABLED ?= false
 GOTOOLS = \
 	github.com/golang/dep/cmd/dep \
 	github.com/alecthomas/gometalinter \
@@ -75,10 +75,10 @@ ifeq ($(OS),Windows_NT)
 	go build $(BUILD_FLAGS) -o build/gaiad.exe ./cmd/gaia/cmd/gaiad
 	go build $(BUILD_FLAGS) -o build/gaiacli.exe ./cmd/gaia/cmd/gaiacli
 else
-	go build $(BUILD_FLAGS) -o build/gaiad ./cmd/gaia/cmd/gaiad
-	go build $(BUILD_FLAGS) -o build/gaiacli ./cmd/gaia/cmd/gaiacli
-	go build $(BUILD_FLAGS) -o build/gaiareplay ./cmd/gaia/cmd/gaiareplay
-	go build $(BUILD_FLAGS) -o build/gaiakeyutil ./cmd/gaia/cmd/gaiakeyutil
+	go build $(BUILD_FLAGS) -mod vendor -o build/gaiad ./cmd/gaia/cmd/gaiad
+	go build $(BUILD_FLAGS) -mod vendor -o build/gaiacli ./cmd/gaia/cmd/gaiacli
+	go build $(BUILD_FLAGS) -mod vendor -o build/gaiareplay ./cmd/gaia/cmd/gaiareplay
+	go build $(BUILD_FLAGS) -mod vendor -o build/gaiakeyutil ./cmd/gaia/cmd/gaiakeyutil
 endif
 
 build-linux: vendor-deps

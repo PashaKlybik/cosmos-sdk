@@ -445,13 +445,13 @@ func (k Keeper) DequeueAllMatureRedelegationQueue(ctx sdk.Context, currTime time
 
 // Perform a delegation, set/update everything necessary within the store.
 func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int,
-	validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err sdk.Error) {
-
+	validator types.Validator, subtractAccount bool) (rewardInfo string, newShares sdk.Dec, err sdk.Error) {
+	rewardInfo = ""
 	// In some situations, the exchange rate becomes invalid, e.g. if
 	// Validator loses all tokens due to slashing. In this case,
 	// make all future delegations invalid.
 	if validator.InvalidExRate() {
-		return sdk.ZeroDec(), types.ErrDelegatorShareExRateInvalid(k.Codespace())
+		return rewardInfo, sdk.ZeroDec(), types.ErrDelegatorShareExRateInvalid(k.Codespace())
 	}
 
 	// Get or create the delegation object
@@ -462,7 +462,7 @@ func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.In
 
 	// call the appropriate hook if present
 	if found {
-		k.BeforeDelegationSharesModified(ctx, delAddr, validator.OperatorAddress)
+		rewardInfo = k.BeforeDelegationSharesModified(ctx, delAddr, validator.OperatorAddress)
 	} else {
 		k.BeforeDelegationCreated(ctx, delAddr, validator.OperatorAddress)
 	}
@@ -470,7 +470,7 @@ func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.In
 	if subtractAccount {
 		_, err := k.bankKeeper.DelegateCoins(ctx, delegation.DelegatorAddress, sdk.Coins{sdk.NewCoin(k.GetParams(ctx).BondDenom, bondAmt)})
 		if err != nil {
-			return sdk.Dec{}, err
+			return rewardInfo, sdk.Dec{}, err
 		}
 	}
 
@@ -483,31 +483,31 @@ func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.In
 	// Call the after-modification hook
 	k.AfterDelegationModified(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
 
-	return newShares, nil
+	return rewardInfo, newShares, nil
 }
 
 // unbond a particular delegation and perform associated store operations
 func (k Keeper) unbond(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
-	shares sdk.Dec) (amount sdk.Int, err sdk.Error) {
-
+	shares sdk.Dec) (rewardInfo string,  amount sdk.Int, err sdk.Error) {
+	rewardInfo = ""
 	// check if a delegation object exists in the store
 	delegation, found := k.GetDelegation(ctx, delAddr, valAddr)
 	if !found {
-		return amount, types.ErrNoDelegatorForAddress(k.Codespace())
+		return rewardInfo, amount, types.ErrNoDelegatorForAddress(k.Codespace())
 	}
 
 	// call the before-delegation-modified hook
-	k.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
+	rewardInfo = k.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
 
 	// ensure that we have enough shares to remove
 	if delegation.Shares.LT(shares) {
-		return amount, types.ErrNotEnoughDelegationShares(k.Codespace(), delegation.Shares.String())
+		return rewardInfo, amount, types.ErrNotEnoughDelegationShares(k.Codespace(), delegation.Shares.String())
 	}
 
 	// get validator
 	validator, found := k.GetValidator(ctx, valAddr)
 	if !found {
-		return amount, types.ErrNoValidatorFound(k.Codespace())
+		return rewardInfo, amount, types.ErrNoValidatorFound(k.Codespace())
 	}
 
 	// subtract shares from delegation
@@ -541,7 +541,7 @@ func (k Keeper) unbond(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValA
 		k.RemoveValidator(ctx, validator.OperatorAddress)
 	}
 
-	return amount, nil
+	return rewardInfo, amount, nil
 }
 
 // get info for begin functions: completionTime and CreationHeight
@@ -574,14 +574,14 @@ func (k Keeper) getBeginInfo(ctx sdk.Context, valSrcAddr sdk.ValAddress) (
 
 // begin unbonding part or all of a delegation
 func (k Keeper) Undelegate(ctx sdk.Context, delAddr sdk.AccAddress,
-	valAddr sdk.ValAddress, sharesAmount sdk.Dec) (completionTime time.Time, sdkErr sdk.Error) {
-
+	valAddr sdk.ValAddress, sharesAmount sdk.Dec) (rewardInfo string, completionTime time.Time, sdkErr sdk.Error) {
+	rewardInfo = ""
 	// create the unbonding delegation
 	completionTime, height, completeNow := k.getBeginInfo(ctx, valAddr)
 
-	returnAmount, err := k.unbond(ctx, delAddr, valAddr, sharesAmount)
+	rewardInfo, returnAmount, err := k.unbond(ctx, delAddr, valAddr, sharesAmount)
 	if err != nil {
-		return completionTime, err
+		return rewardInfo, completionTime, err
 	}
 	balance := sdk.NewCoin(k.BondDenom(ctx), returnAmount)
 
@@ -590,22 +590,22 @@ func (k Keeper) Undelegate(ctx sdk.Context, delAddr sdk.AccAddress,
 		// track undelegation only when remaining or truncated shares are non-zero
 		if !balance.IsZero() {
 			if _, err := k.bankKeeper.UndelegateCoins(ctx, delAddr, sdk.Coins{balance}); err != nil {
-				return completionTime, err
+				return rewardInfo, completionTime, err
 			}
 		}
 
-		return completionTime, nil
+		return rewardInfo, completionTime, nil
 	}
 
 	if k.HasMaxUnbondingDelegationEntries(ctx, delAddr, valAddr) {
-		return time.Time{}, types.ErrMaxUnbondingDelegationEntries(k.Codespace())
+		return rewardInfo, time.Time{}, types.ErrMaxUnbondingDelegationEntries(k.Codespace())
 	}
 
 	ubd := k.SetUnbondingDelegationEntry(ctx, delAddr,
 		valAddr, height, completionTime, returnAmount)
 
 	k.InsertUBDQueue(ctx, ubd, completionTime)
-	return completionTime, nil
+	return rewardInfo, completionTime, nil
 }
 
 // CompleteUnbonding completes the unbonding of all mature entries in the
@@ -650,50 +650,54 @@ func (k Keeper) CompleteUnbonding(ctx sdk.Context, delAddr sdk.AccAddress,
 // begin unbonding / redelegation; create a redelegation record
 func (k Keeper) BeginRedelegation(ctx sdk.Context, delAddr sdk.AccAddress,
 	valSrcAddr, valDstAddr sdk.ValAddress, sharesAmount sdk.Dec) (
-	completionTime time.Time, errSdk sdk.Error) {
-
+	rewardInfo string, completionTime time.Time, errSdk sdk.Error) {
+	rewardInfo = ""
 	if bytes.Equal(valSrcAddr, valDstAddr) {
-		return time.Time{}, types.ErrSelfRedelegation(k.Codespace())
+		return rewardInfo, time.Time{}, types.ErrSelfRedelegation(k.Codespace())
 	}
 
 	// check if this is a transitive redelegation
 	if k.HasReceivingRedelegation(ctx, delAddr, valSrcAddr) {
-		return time.Time{}, types.ErrTransitiveRedelegation(k.Codespace())
+		return rewardInfo, time.Time{}, types.ErrTransitiveRedelegation(k.Codespace())
 	}
 
 	if k.HasMaxRedelegationEntries(ctx, delAddr, valSrcAddr, valDstAddr) {
-		return time.Time{}, types.ErrMaxRedelegationEntries(k.Codespace())
+		return rewardInfo, time.Time{}, types.ErrMaxRedelegationEntries(k.Codespace())
 	}
 
-	returnAmount, err := k.unbond(ctx, delAddr, valSrcAddr, sharesAmount)
+	rewardInfo, returnAmount, err := k.unbond(ctx, delAddr, valSrcAddr, sharesAmount)
 	if err != nil {
-		return time.Time{}, err
+		return rewardInfo, time.Time{}, err
 	}
 
 	if returnAmount.IsZero() {
-		return time.Time{}, types.ErrVerySmallRedelegation(k.Codespace())
+		return rewardInfo, time.Time{}, types.ErrVerySmallRedelegation(k.Codespace())
 	}
 	dstValidator, found := k.GetValidator(ctx, valDstAddr)
 	if !found {
-		return time.Time{}, types.ErrBadRedelegationDst(k.Codespace())
+		return rewardInfo, time.Time{}, types.ErrBadRedelegationDst(k.Codespace())
 	}
 
-	sharesCreated, err := k.Delegate(ctx, delAddr, returnAmount, dstValidator, false)
+	rewardInfo1, sharesCreated, err := k.Delegate(ctx, delAddr, returnAmount, dstValidator, false)
 	if err != nil {
-		return time.Time{}, err
+		return rewardInfo, time.Time{}, err
 	}
-
+	if rewardInfo!="" && rewardInfo1!="" {
+		rewardInfo = rewardInfo+ ", "+ rewardInfo1
+	} else if rewardInfo1!="" {
+		rewardInfo = rewardInfo1
+	}
 	// create the unbonding delegation
 	completionTime, height, completeNow := k.getBeginInfo(ctx, valSrcAddr)
 
 	if completeNow { // no need to create the redelegation object
-		return completionTime, nil
+		return rewardInfo, completionTime, nil
 	}
 
 	red := k.SetRedelegationEntry(ctx, delAddr, valSrcAddr, valDstAddr,
 		height, completionTime, returnAmount, sharesAmount, sharesCreated)
 	k.InsertRedelegationQueue(ctx, red, completionTime)
-	return completionTime, nil
+	return rewardInfo, completionTime, nil
 }
 
 // CompleteRedelegation completes the unbonding of all mature entries in the

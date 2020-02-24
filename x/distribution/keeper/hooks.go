@@ -78,14 +78,21 @@ func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, 
 	// increment period
 	h.k.incrementValidatorPeriod(ctx, val)
 }
-func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
+func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) string  {
 	val := h.k.stakingKeeper.Validator(ctx, valAddr)
 	del := h.k.stakingKeeper.Delegation(ctx, delAddr, valAddr)
 
 	// withdraw delegation rewards (which also increments period)
-	if err := h.k.withdrawDelegationRewards(ctx, val, del); err != nil {
+	coins , err := h.k.withdrawDelegationRewards(ctx, val, del);
+	if  err != nil {
 		panic(err)
 	}
+	if len(coins.String()) != 0 {
+		return  `{"delegator_address":"`+delAddr.String()+`", "validator_address": "` +
+			valAddr.String() +`", "amount": "` +coins.String()  +`"}`
+	}
+
+	return ""
 }
 func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
 	// nothing needed here since BeforeDelegationSharesModified will always also be called

@@ -152,7 +152,7 @@ type StakingHooks interface {
 	AfterValidatorBeginUnbonding(ctx Context, consAddr ConsAddress, valAddr ValAddress) // Must be called when a validator begins unbonding
 
 	BeforeDelegationCreated(ctx Context, delAddr AccAddress, valAddr ValAddress)        // Must be called when a delegation is created
-	BeforeDelegationSharesModified(ctx Context, delAddr AccAddress, valAddr ValAddress) // Must be called when a delegation's shares are modified
+	BeforeDelegationSharesModified(ctx Context, delAddr AccAddress, valAddr ValAddress) string // Must be called when a delegation's shares are modified
 	BeforeDelegationRemoved(ctx Context, delAddr AccAddress, valAddr ValAddress)        // Must be called when a delegation is removed
 	AfterDelegationModified(ctx Context, delAddr AccAddress, valAddr ValAddress)
 	BeforeValidatorSlashed(ctx Context, valAddr ValAddress, fraction Dec)

@@ -137,7 +137,7 @@ func handleMsgCreateValidator(ctx sdk.Context, msg types.MsgCreateValidator, k k
 
 	// move coins from the msg.Address account to a (self-delegation) delegator account
 	// the validator account and global shares are updated within here
-	_, err = k.Delegate(ctx, msg.DelegatorAddress, msg.Value.Amount, validator, true)
+	rewardInfo, _, err := k.Delegate(ctx, msg.DelegatorAddress, msg.Value.Amount, validator, true)
 	if err != nil {
 		return err.Result()
 	}
@@ -147,9 +147,13 @@ func handleMsgCreateValidator(ctx sdk.Context, msg types.MsgCreateValidator, k k
 		tags.Moniker, msg.Description.Moniker,
 		tags.Identity, msg.Description.Identity,
 	)
+	if rewardInfo!="" {
+		rewardInfo = `"cosmoshub1/reward": [` + rewardInfo + `]`
+	}
 
 	return sdk.Result{
 		Tags: tags,
+		Log: rewardInfo,
 	}
 }
 
@@ -213,7 +217,7 @@ func handleMsgDelegate(ctx sdk.Context, msg types.MsgDelegate, k keeper.Keeper) 
 		return ErrBadDenom(k.Codespace()).Result()
 	}
 
-	_, err := k.Delegate(ctx, msg.DelegatorAddress, msg.Value.Amount, validator, true)
+	rewardInfo, _, err := k.Delegate(ctx, msg.DelegatorAddress, msg.Value.Amount, validator, true)
 	if err != nil {
 		return err.Result()
 	}
@@ -223,13 +227,18 @@ func handleMsgDelegate(ctx sdk.Context, msg types.MsgDelegate, k keeper.Keeper) 
 		tags.DstValidator, msg.ValidatorAddress.String(),
 	)
 
+	if rewardInfo!="" {
+		rewardInfo = `"cosmoshub1/reward": [` + rewardInfo + `]`
+	}
+
 	return sdk.Result{
 		Tags: tags,
+		Log:rewardInfo,
 	}
 }
 
 func handleMsgUndelegate(ctx sdk.Context, msg types.MsgUndelegate, k keeper.Keeper) sdk.Result {
-	completionTime, err := k.Undelegate(ctx, msg.DelegatorAddress, msg.ValidatorAddress, msg.SharesAmount)
+	rewardInfo, completionTime, err := k.Undelegate(ctx, msg.DelegatorAddress, msg.ValidatorAddress, msg.SharesAmount)
 	if err != nil {
 		return err.Result()
 	}
@@ -240,12 +249,15 @@ func handleMsgUndelegate(ctx sdk.Context, msg types.MsgUndelegate, k keeper.Keep
 		tags.SrcValidator, msg.ValidatorAddress.String(),
 		tags.EndTime, completionTime.Format(time.RFC3339),
 	)
+	if rewardInfo!="" {
+		rewardInfo = `"cosmoshub1/reward": [` + rewardInfo + `]`
+	}
 
-	return sdk.Result{Data: finishTime, Tags: tags}
+	return sdk.Result{Data: finishTime, Tags: tags, Log: rewardInfo}
 }
 
 func handleMsgBeginRedelegate(ctx sdk.Context, msg types.MsgBeginRedelegate, k keeper.Keeper) sdk.Result {
-	completionTime, err := k.BeginRedelegation(ctx, msg.DelegatorAddress, msg.ValidatorSrcAddress,
+	rewardInfo, completionTime, err := k.BeginRedelegation(ctx, msg.DelegatorAddress, msg.ValidatorSrcAddress,
 		msg.ValidatorDstAddress, msg.SharesAmount)
 	if err != nil {
 		return err.Result()
@@ -258,6 +270,9 @@ func handleMsgBeginRedelegate(ctx sdk.Context, msg types.MsgBeginRedelegate, k k
 		tags.DstValidator, msg.ValidatorDstAddress.String(),
 		tags.EndTime, completionTime.Format(time.RFC3339),
 	)
+	if rewardInfo!="" {
+		rewardInfo = `"cosmoshub1/reward": [` + rewardInfo + `]`
+	}
 
-	return sdk.Result{Data: finishTime, Tags: resTags}
+	return sdk.Result{Data: finishTime, Tags: resTags, Log:rewardInfo}
 }

@@ -42,7 +42,7 @@ func handleMsgModifyWithdrawAddress(ctx sdk.Context, msg types.MsgSetWithdrawAdd
 
 func handleMsgWithdrawDelegatorReward(ctx sdk.Context, msg types.MsgWithdrawDelegatorReward, k keeper.Keeper) sdk.Result {
 
-	err := k.WithdrawDelegationRewards(ctx, msg.DelegatorAddress, msg.ValidatorAddress)
+	rewardInfo, err := k.WithdrawDelegationRewards(ctx, msg.DelegatorAddress, msg.ValidatorAddress)
 	if err != nil {
 		return err.Result()
 	}
@@ -51,8 +51,13 @@ func handleMsgWithdrawDelegatorReward(ctx sdk.Context, msg types.MsgWithdrawDele
 		tags.Delegator, []byte(msg.DelegatorAddress.String()),
 		tags.Validator, []byte(msg.ValidatorAddress.String()),
 	)
+	if rewardInfo!="" {
+		rewardInfo = `"cosmoshub1/reward": [` + rewardInfo + `]`
+	}
+
 	return sdk.Result{
 		Tags: tags,
+		Log: rewardInfo,
 	}
 }
 

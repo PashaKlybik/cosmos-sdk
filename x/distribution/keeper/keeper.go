@@ -47,26 +47,33 @@ func (k Keeper) SetWithdrawAddr(ctx sdk.Context, delegatorAddr sdk.AccAddress, w
 }
 
 // withdraw rewards from a delegation
-func (k Keeper) WithdrawDelegationRewards(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) sdk.Error {
+func (k Keeper) WithdrawDelegationRewards(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (string, sdk.Error) {
+	logInfo := ""
 	val := k.stakingKeeper.Validator(ctx, valAddr)
 	if val == nil {
-		return types.ErrNoValidatorDistInfo(k.codespace)
+		return logInfo, types.ErrNoValidatorDistInfo(k.codespace)
 	}
 
 	del := k.stakingKeeper.Delegation(ctx, delAddr, valAddr)
 	if del == nil {
-		return types.ErrNoDelegationDistInfo(k.codespace)
+		return logInfo, types.ErrNoDelegationDistInfo(k.codespace)
 	}
 
 	// withdraw rewards
-	if err := k.withdrawDelegationRewards(ctx, val, del); err != nil {
-		return err
+	coins, err := k.withdrawDelegationRewards(ctx, val, del)
+	if err != nil {
+		return logInfo, err
 	}
 
 	// reinitialize the delegation
 	k.initializeDelegation(ctx, valAddr, delAddr)
 
-	return nil
+	if len(coins.String()) != 0 {
+		logInfo = `{"delegator_address":"`+delAddr.String()+`", "validator_address": "` +
+			valAddr.String() +`", "amount": "` +coins.String()  +`"}`
+	}
+
+	return logInfo, nil
 }
 
 // withdraw validator commission
