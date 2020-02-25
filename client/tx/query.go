@@ -102,6 +102,12 @@ func formatTxResult(cdc *codec.Codec, res *ctypes.ResultTx) (sdk.TxResponse, err
 	return sdk.NewResponseResultTx(res, tx), nil
 }
 
+
+func ParseTx(cdc *codec.Codec, txBytes []byte) (auth.StdTx, error) {
+	tx, err := parseTx(cdc, txBytes)
+	return tx.(auth.StdTx), err
+}
+
 func parseTx(cdc *codec.Codec, txBytes []byte) (sdk.Tx, error) {
 	var tx auth.StdTx
 
