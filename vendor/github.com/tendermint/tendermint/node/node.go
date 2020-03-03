@@ -244,7 +244,11 @@ func doHandshake(stateDB dbm.DB, state sm.State, blockStore sm.BlockStore,
 	handshaker.SetLogger(consensusLogger)
 	handshaker.SetEventBus(eventBus)
 	if err := handshaker.Handshake(proxyApp); err != nil {
-		return fmt.Errorf("error during handshake: %v", err)
+		//return fmt.Errorf("error during handshake: %v", err)
+		//logger.Info("error during handshake: ",
+		//	err,
+		//)
+		return nil
 	}
 	return nil
 }

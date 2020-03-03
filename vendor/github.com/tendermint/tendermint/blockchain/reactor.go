@@ -72,7 +72,7 @@ type BlockchainReactor struct {
 func NewBlockchainReactor(state sm.State, blockExec *sm.BlockExecutor, store *BlockStore,
 	fastSync bool) *BlockchainReactor {
 
-	if state.LastBlockHeight != store.Height() {
+	if state.LastBlockHeight != store.Height()-1 {
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch", state.LastBlockHeight,
 			store.Height()))
 	}
