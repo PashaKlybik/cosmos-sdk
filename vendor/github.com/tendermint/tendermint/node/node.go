@@ -263,7 +263,8 @@ func NewNode(config *cfg.Config,
 	handshaker.SetLogger(consensusLogger)
 	handshaker.SetEventBus(eventBus)
 	if err := handshaker.Handshake(proxyApp); err != nil {
-		return nil, fmt.Errorf("Error during handshake: %v", err)
+		//return nil, fmt.Errorf("Error during handshake: %v", err)
+		logger.Info("Error during handshake: ",err)
 	}
 
 	// Reload the state. It will have the Version.Consensus.App set by the
