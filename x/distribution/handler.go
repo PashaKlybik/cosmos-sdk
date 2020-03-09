@@ -45,6 +45,11 @@ func handleMsgWithdrawDelegatorReward(ctx sdk.Context, msg types.MsgWithdrawDele
 	if err != nil {
 		return err.Result()
 	}
+	var logInfo string
+	if len(rewards.String())!=0 {
+		logInfo =  `"cosmoshub2/reward": [{"delegator_address":"` + msg.DelegatorAddress.String() +`", "validator_address": "` +
+			msg.DelegatorAddress.String() +`", "amount": "` +rewards.String() +  `"}]`
+	}
 
 	return sdk.Result{
 		Tags: sdk.NewTags(
@@ -52,6 +57,7 @@ func handleMsgWithdrawDelegatorReward(ctx sdk.Context, msg types.MsgWithdrawDele
 			tags.Delegator, []byte(msg.DelegatorAddress.String()),
 			tags.Validator, []byte(msg.ValidatorAddress.String()),
 		),
+		Log: logInfo,
 	}
 }
 

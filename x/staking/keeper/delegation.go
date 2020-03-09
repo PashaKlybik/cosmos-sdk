@@ -450,13 +450,14 @@ func (k Keeper) DequeueAllMatureRedelegationQueue(ctx sdk.Context, currTime time
 
 // Perform a delegation, set/update everything necessary within the store.
 func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int,
-	validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err sdk.Error) {
+	validator types.Validator, subtractAccount bool) (logInfo string, newShares sdk.Dec, err sdk.Error) {
 
 	// In some situations, the exchange rate becomes invalid, e.g. if
 	// Validator loses all tokens due to slashing. In this case,
 	// make all future delegations invalid.
+	logInfo=""
 	if validator.InvalidExRate() {
-		return sdk.ZeroDec(), types.ErrDelegatorShareExRateInvalid(k.Codespace())
+		return logInfo, sdk.ZeroDec(), types.ErrDelegatorShareExRateInvalid(k.Codespace())
 	}
 
 	// Get or create the delegation object
@@ -465,9 +466,16 @@ func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.In
 		delegation = types.NewDelegation(delAddr, validator.OperatorAddress, sdk.ZeroDec())
 	}
 
+
+	//var rewardAmount sdk.Coins
 	// call the appropriate hook if present
 	if found {
-		k.BeforeDelegationSharesModified(ctx, delAddr, validator.OperatorAddress)
+		rewardAmount := k.BeforeDelegationSharesModified(ctx, delAddr, validator.OperatorAddress)
+		if len(rewardAmount.String())!=0 {
+			logInfo =  `{"delegator_address":"` + delAddr.String() +`", "validator_address": "` +
+				validator.OperatorAddress.String() +`", "amount": "` +rewardAmount.String() +  `"}`
+		}
+
 	} else {
 		k.BeforeDelegationCreated(ctx, delAddr, validator.OperatorAddress)
 	}
@@ -475,7 +483,7 @@ func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.In
 	if subtractAccount {
 		_, err := k.bankKeeper.DelegateCoins(ctx, delegation.DelegatorAddress, sdk.Coins{sdk.NewCoin(k.GetParams(ctx).BondDenom, bondAmt)})
 		if err != nil {
-			return sdk.Dec{}, err
+			return logInfo, sdk.Dec{}, err
 		}
 	}
 
@@ -488,31 +496,34 @@ func (k Keeper) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.In
 	// Call the after-modification hook
 	k.AfterDelegationModified(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
 
-	return newShares, nil
+	return logInfo, newShares, nil
 }
 
 // unbond a particular delegation and perform associated store operations
 func (k Keeper) unbond(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
-	shares sdk.Dec) (amount sdk.Int, err sdk.Error) {
-
+	shares sdk.Dec) (logInfo string, amount sdk.Int, err sdk.Error) {
+	logInfo = ""
 	// check if a delegation object exists in the store
 	delegation, found := k.GetDelegation(ctx, delAddr, valAddr)
 	if !found {
-		return amount, types.ErrNoDelegatorForAddress(k.Codespace())
+		return logInfo, amount, types.ErrNoDelegatorForAddress(k.Codespace())
 	}
 
 	// call the before-delegation-modified hook
-	k.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
-
+	rewardAmount := k.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
+	if len(rewardAmount.String())!=0 {
+		logInfo = `{"delegator_address":"`+delAddr.String()+`", "validator_address": "` +
+			valAddr.String() +`", "amount": "` +rewardAmount.String()  +`"}`
+	}
 	// ensure that we have enough shares to remove
 	if delegation.Shares.LT(shares) {
-		return amount, types.ErrNotEnoughDelegationShares(k.Codespace(), delegation.Shares.String())
+		return logInfo, amount, types.ErrNotEnoughDelegationShares(k.Codespace(), delegation.Shares.String())
 	}
 
 	// get validator
 	validator, found := k.GetValidator(ctx, valAddr)
 	if !found {
-		return amount, types.ErrNoValidatorFound(k.Codespace())
+		return logInfo, amount, types.ErrNoValidatorFound(k.Codespace())
 	}
 
 	// subtract shares from delegation
@@ -546,7 +557,7 @@ func (k Keeper) unbond(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValA
 		k.RemoveValidator(ctx, validator.OperatorAddress)
 	}
 
-	return amount, nil
+	return logInfo, amount, nil
 }
 
 // getBeginInfo returns the completion time and height of a redelegation, along
@@ -584,17 +595,19 @@ func (k Keeper) getBeginInfo(
 // processed during the staking EndBlocker.
 func (k Keeper) Undelegate(
 	ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec,
-) (time.Time, sdk.Error) {
-
+) (string, time.Time, sdk.Error) {
+	logInfo := ""
 	// Undelegating must obey the unbonding period regardless of the validator's
 	// status for safety. Block heights prior to undelegatePatchHeight allowed
 	// delegates to unbond from an unbonded validator immediately.
 	if ctx.BlockHeight() < UndelegatePatchHeight {
 		completionTime, height, completeNow := k.getBeginInfo(ctx, valAddr)
 
-		returnAmount, err := k.unbond(ctx, delAddr, valAddr, sharesAmount)
+		//returnAmount, err := k.unbond(ctx, delAddr, valAddr, sharesAmount)
+		logInfo1, returnAmount, err := k.unbond(ctx, delAddr, valAddr, sharesAmount)
+		logInfo +=logInfo1
 		if err != nil {
-			return completionTime, err
+			return logInfo, completionTime, err
 		}
 
 		balance := sdk.NewCoin(k.BondDenom(ctx), returnAmount)
@@ -604,37 +617,49 @@ func (k Keeper) Undelegate(
 			// track undelegation only when remaining or truncated shares are non-zero
 			if !balance.IsZero() {
 				if _, err := k.bankKeeper.UndelegateCoins(ctx, delAddr, sdk.Coins{balance}); err != nil {
-					return completionTime, err
+					return logInfo, completionTime, err
 				}
 			}
-
-			return completionTime, nil
+			if logInfo!="" {
+				logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+			}
+			return logInfo, completionTime, nil
 		}
 
 		if k.HasMaxUnbondingDelegationEntries(ctx, delAddr, valAddr) {
-			return time.Time{}, types.ErrMaxUnbondingDelegationEntries(k.Codespace())
+			return logInfo, time.Time{}, types.ErrMaxUnbondingDelegationEntries(k.Codespace())
 		}
 
 		ubd := k.SetUnbondingDelegationEntry(ctx, delAddr, valAddr, height, completionTime, returnAmount)
 		k.InsertUBDQueue(ctx, ubd, completionTime)
-
-		return completionTime, nil
+		if logInfo!="" {
+			logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+		}
+		return logInfo, completionTime, nil
 	}
 
-	returnAmount, err := k.unbond(ctx, delAddr, valAddr, sharesAmount)
+	logInfo2, returnAmount, err := k.unbond(ctx, delAddr, valAddr, sharesAmount)
+	if logInfo!="" && logInfo2!="" {
+		logInfo+=", "
+	}
+	logInfo += logInfo2
+	if logInfo!="" {
+		logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+	}
+
 	if err != nil {
-		return time.Time{}, err
+		return logInfo, time.Time{}, err
 	}
 
 	if k.HasMaxUnbondingDelegationEntries(ctx, delAddr, valAddr) {
-		return time.Time{}, types.ErrMaxUnbondingDelegationEntries(k.Codespace())
+		return logInfo, time.Time{}, types.ErrMaxUnbondingDelegationEntries(k.Codespace())
 	}
 
 	completionTime := ctx.BlockHeader().Time.Add(k.UnbondingTime(ctx))
 	ubd := k.SetUnbondingDelegationEntry(ctx, delAddr, valAddr, ctx.BlockHeight(), completionTime, returnAmount)
 	k.InsertUBDQueue(ctx, ubd, completionTime)
 
-	return completionTime, nil
+	return logInfo, completionTime, nil
 }
 
 // CompleteUnbonding completes the unbonding of all mature entries in the
@@ -678,51 +703,59 @@ func (k Keeper) CompleteUnbonding(ctx sdk.Context, delAddr sdk.AccAddress,
 
 // begin unbonding / redelegation; create a redelegation record
 func (k Keeper) BeginRedelegation(ctx sdk.Context, delAddr sdk.AccAddress,
-	valSrcAddr, valDstAddr sdk.ValAddress, sharesAmount sdk.Dec) (
+	valSrcAddr, valDstAddr sdk.ValAddress, sharesAmount sdk.Dec) (logInfo string,
 	completionTime time.Time, errSdk sdk.Error) {
-
+	logInfo = ""
 	if bytes.Equal(valSrcAddr, valDstAddr) {
-		return time.Time{}, types.ErrSelfRedelegation(k.Codespace())
+		return logInfo, time.Time{}, types.ErrSelfRedelegation(k.Codespace())
 	}
 
 	// check if this is a transitive redelegation
 	if k.HasReceivingRedelegation(ctx, delAddr, valSrcAddr) {
-		return time.Time{}, types.ErrTransitiveRedelegation(k.Codespace())
+		return logInfo, time.Time{}, types.ErrTransitiveRedelegation(k.Codespace())
 	}
 
 	if k.HasMaxRedelegationEntries(ctx, delAddr, valSrcAddr, valDstAddr) {
-		return time.Time{}, types.ErrMaxRedelegationEntries(k.Codespace())
+		return logInfo, time.Time{}, types.ErrMaxRedelegationEntries(k.Codespace())
 	}
 
-	returnAmount, err := k.unbond(ctx, delAddr, valSrcAddr, sharesAmount)
+	logInfo1, returnAmount, err := k.unbond(ctx, delAddr, valSrcAddr, sharesAmount)
+	logInfo += logInfo1
 	if err != nil {
-		return time.Time{}, err
+		return logInfo, time.Time{}, err
 	}
 
 	if returnAmount.IsZero() {
-		return time.Time{}, types.ErrVerySmallRedelegation(k.Codespace())
+		return logInfo, time.Time{}, types.ErrVerySmallRedelegation(k.Codespace())
 	}
 	dstValidator, found := k.GetValidator(ctx, valDstAddr)
 	if !found {
-		return time.Time{}, types.ErrBadRedelegationDst(k.Codespace())
+		return logInfo, time.Time{}, types.ErrBadRedelegationDst(k.Codespace())
 	}
 
-	sharesCreated, err := k.Delegate(ctx, delAddr, returnAmount, dstValidator, false)
+	logInfo2, sharesCreated, err := k.Delegate(ctx, delAddr, returnAmount, dstValidator, false)
+	if logInfo!="" && logInfo2!="" {
+		logInfo+=", "
+	}
+	logInfo += logInfo2
+	if logInfo!="" {
+		logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+	}
 	if err != nil {
-		return time.Time{}, err
+		return logInfo, time.Time{}, err
 	}
 
 	// create the unbonding delegation
 	completionTime, height, completeNow := k.getBeginInfo(ctx, valSrcAddr)
 
 	if completeNow { // no need to create the redelegation object
-		return completionTime, nil
+		return logInfo, completionTime, nil
 	}
 
 	red := k.SetRedelegationEntry(ctx, delAddr, valSrcAddr, valDstAddr,
 		height, completionTime, returnAmount, sharesAmount, sharesCreated)
 	k.InsertRedelegationQueue(ctx, red, completionTime)
-	return completionTime, nil
+	return logInfo, completionTime, nil
 }
 
 // CompleteRedelegation completes the unbonding of all mature entries in the

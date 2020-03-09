@@ -87,11 +87,23 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []st
 		_, _ = app.distrKeeper.WithdrawValidatorCommission(ctx, val.GetOperator())
 		return false
 	})
+	type RewardInfo struct{
+		delegatorAddress string
+		validatorAddress string
+		rewardCount string
+	}
+	var rewardInfo []RewardInfo
 
 	// withdraw all delegator rewards
 	dels := app.stakingKeeper.GetAllDelegations(ctx)
 	for _, delegation := range dels {
-		_, _ = app.distrKeeper.WithdrawDelegationRewards(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
+
+		coins , _ := app.distrKeeper.WithdrawDelegationRewards(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
+		rewardInfo = append(rewardInfo, RewardInfo{
+			delegatorAddress: delegation.DelegatorAddress.String(),
+			validatorAddress: delegation.DelegatorAddress.String(),
+			rewardCount: coins.String(),
+		})
 	}
 
 	// clear validator slash events

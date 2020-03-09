@@ -137,11 +137,13 @@ func handleMsgCreateValidator(ctx sdk.Context, msg types.MsgCreateValidator, k k
 
 	// move coins from the msg.Address account to a (self-delegation) delegator account
 	// the validator account and global shares are updated within here
-	_, err = k.Delegate(ctx, msg.DelegatorAddress, msg.Value.Amount, validator, true)
+	logInfo, _, err := k.Delegate(ctx, msg.DelegatorAddress, msg.Value.Amount, validator, true)
 	if err != nil {
 		return err.Result()
 	}
-
+	if logInfo!="" {
+		logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+	}
 	tags := sdk.NewTags(
 		tags.DstValidator, msg.ValidatorAddress.String(),
 		tags.Moniker, msg.Description.Moniker,
@@ -150,6 +152,7 @@ func handleMsgCreateValidator(ctx sdk.Context, msg types.MsgCreateValidator, k k
 
 	return sdk.Result{
 		Tags: tags,
+		Log: logInfo,
 	}
 }
 
@@ -213,11 +216,13 @@ func handleMsgDelegate(ctx sdk.Context, msg types.MsgDelegate, k keeper.Keeper) 
 		return ErrBadDenom(k.Codespace()).Result()
 	}
 
-	_, err := k.Delegate(ctx, msg.DelegatorAddress, msg.Amount.Amount, validator, true)
+	logInfo, _, err := k.Delegate(ctx, msg.DelegatorAddress, msg.Amount.Amount, validator, true)
 	if err != nil {
 		return err.Result()
 	}
-
+	if logInfo!="" {
+		logInfo = `"cosmoshub2/reward": [` + logInfo + `]`
+	}
 	tags := sdk.NewTags(
 		tags.Delegator, msg.DelegatorAddress.String(),
 		tags.DstValidator, msg.ValidatorAddress.String(),
@@ -225,6 +230,7 @@ func handleMsgDelegate(ctx sdk.Context, msg types.MsgDelegate, k keeper.Keeper) 
 
 	return sdk.Result{
 		Tags: tags,
+		Log: logInfo,
 	}
 }
 
@@ -236,7 +242,7 @@ func handleMsgUndelegate(ctx sdk.Context, msg types.MsgUndelegate, k keeper.Keep
 		return err.Result()
 	}
 
-	completionTime, err := k.Undelegate(ctx, msg.DelegatorAddress, msg.ValidatorAddress, shares)
+	logInfo, completionTime, err := k.Undelegate(ctx, msg.DelegatorAddress, msg.ValidatorAddress, shares)
 	if err != nil {
 		return err.Result()
 	}
@@ -248,7 +254,7 @@ func handleMsgUndelegate(ctx sdk.Context, msg types.MsgUndelegate, k keeper.Keep
 		tags.EndTime, completionTime.Format(time.RFC3339),
 	)
 
-	return sdk.Result{Data: finishTime, Tags: tags}
+	return sdk.Result{Data: finishTime, Tags: tags, Log: logInfo}
 }
 
 func handleMsgBeginRedelegate(ctx sdk.Context, msg types.MsgBeginRedelegate, k keeper.Keeper) sdk.Result {
@@ -259,7 +265,7 @@ func handleMsgBeginRedelegate(ctx sdk.Context, msg types.MsgBeginRedelegate, k k
 		return err.Result()
 	}
 
-	completionTime, err := k.BeginRedelegation(
+	logInfo, completionTime, err := k.BeginRedelegation(
 		ctx, msg.DelegatorAddress, msg.ValidatorSrcAddress, msg.ValidatorDstAddress, shares,
 	)
 	if err != nil {
@@ -274,5 +280,5 @@ func handleMsgBeginRedelegate(ctx sdk.Context, msg types.MsgBeginRedelegate, k k
 		tags.EndTime, completionTime.Format(time.RFC3339),
 	)
 
-	return sdk.Result{Data: finishTime, Tags: resTags}
+	return sdk.Result{Data: finishTime, Tags: resTags, Log: logInfo}
 }

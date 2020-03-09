@@ -47,10 +47,12 @@ func (k Keeper) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress,
 }
 
 // BeforeDelegationSharesModified - call hook if registered
-func (k Keeper) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
+func (k Keeper) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) sdk.Coins {
 	if k.hooks != nil {
-		k.hooks.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
+		coins := k.hooks.BeforeDelegationSharesModified(ctx, delAddr, valAddr)
+		return coins
 	}
+	return nil
 }
 
 // BeforeDelegationRemoved - call hook if registered

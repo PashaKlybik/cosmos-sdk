@@ -3,7 +3,7 @@ PACKAGES_SIMTEST=$(shell go list ./... | grep '/simulation')
 VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
 CAT := $(if $(filter $(OS),Windows_NT),type,cat)
-LEDGER_ENABLED ?= true
+LEDGER_ENABLED ?= false
 GOBIN ?= $(GOPATH)/bin
 GOSUM := $(shell which gosum)
 
@@ -74,13 +74,13 @@ ci: tools install test_cover lint test
 
 build: go.sum
 ifeq ($(OS),Windows_NT)
-	go build -mod=readonly $(BUILD_FLAGS) -o build/gaiad.exe ./cmd/gaia/cmd/gaiad
-	go build -mod=readonly $(BUILD_FLAGS) -o build/gaiacli.exe ./cmd/gaia/cmd/gaiacli
+	go build -mod=vendor $(BUILD_FLAGS) -o build/gaiad.exe ./cmd/gaia/cmd/gaiad
+	go build -mod=vendor $(BUILD_FLAGS) -o build/gaiacli.exe ./cmd/gaia/cmd/gaiacli
 else
-	go build -mod=readonly $(BUILD_FLAGS) -o build/gaiad ./cmd/gaia/cmd/gaiad
-	go build -mod=readonly $(BUILD_FLAGS) -o build/gaiacli ./cmd/gaia/cmd/gaiacli
-	go build -mod=readonly $(BUILD_FLAGS) -o build/gaiareplay ./cmd/gaia/cmd/gaiareplay
-	go build -mod=readonly $(BUILD_FLAGS) -o build/gaiakeyutil ./cmd/gaia/cmd/gaiakeyutil
+	go build -mod=vendor $(BUILD_FLAGS) -o build/gaiad ./cmd/gaia/cmd/gaiad
+	go build -mod=vendor $(BUILD_FLAGS) -o build/gaiacli ./cmd/gaia/cmd/gaiacli
+	go build -mod=vendor $(BUILD_FLAGS) -o build/gaiareplay ./cmd/gaia/cmd/gaiareplay
+	go build -mod=vendor $(BUILD_FLAGS) -o build/gaiakeyutil ./cmd/gaia/cmd/gaiakeyutil
 endif
 
 build-linux: go.sum
@@ -90,10 +90,10 @@ update_gaia_lite_docs:
 	@statik -src=client/lcd/swagger-ui -dest=client/lcd -f
 
 install: go.sum check-ledger update_gaia_lite_docs
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiad
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiacli
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiareplay
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiakeyutil
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiad
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiacli
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiareplay
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiakeyutil
 
 install_debug: go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiadebug
