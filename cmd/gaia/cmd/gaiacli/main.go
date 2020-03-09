@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 
 	"github.com/cosmos/cosmos-sdk/x/mint"
 
-	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -180,12 +178,12 @@ func registerRoutes(rs *lcd.RestServer) {
 }
 
 func registerSwaggerUI(rs *lcd.RestServer) {
-	statikFS, err := fs.New()
-	if err != nil {
-		panic(err)
-	}
-	staticServer := http.FileServer(statikFS)
-	rs.Mux.PathPrefix("/swagger-ui/").Handler(http.StripPrefix("/swagger-ui/", staticServer))
+	//statikFS, err := fs.New()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//staticServer := http.FileServer(statikFS)
+	//rs.Mux.PathPrefix("/swagger-ui/").Handler(http.StripPrefix("/swagger-ui/", staticServer))
 }
 
 func initConfig(cmd *cobra.Command) error {
