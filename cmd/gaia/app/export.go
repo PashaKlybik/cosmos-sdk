@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -85,12 +86,17 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []st
 		_ = app.distrKeeper.WithdrawValidatorCommission(ctx, val.GetOperator())
 		return false
 	})
-
+	rewardsInfo :=`[`
 	// withdraw all delegator rewards
 	dels := app.stakingKeeper.GetAllDelegations(ctx)
 	for _, delegation := range dels {
-		_, _ = app.distrKeeper.WithdrawDelegationRewards(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
+		rewardInfo, _ := app.distrKeeper.WithdrawDelegationRewards(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
+		rewardsInfo += rewardInfo+ `, `
 	}
+	rewardsInfo+=`]`
+
+	_ = ioutil.WriteFile("cosmoshub1.json", []byte(rewardsInfo), 0644)
+
 
 	// clear validator slash events
 	app.distrKeeper.DeleteAllValidatorSlashEvents(ctx)

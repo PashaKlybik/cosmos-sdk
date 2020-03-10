@@ -72,13 +72,13 @@ ci: devtools vendor-deps install test_cover test_lint test
 
 build:
 ifeq ($(OS),Windows_NT)
-	go build $(BUILD_FLAGS) -o build/gaiad.exe ./cmd/gaia/cmd/gaiad
-	go build $(BUILD_FLAGS) -o build/gaiacli.exe ./cmd/gaia/cmd/gaiacli
+	go build -mod=vendor $(BUILD_FLAGS) -o build/gaiad.exe ./cmd/gaia/cmd/gaiad
+	go build  -mod=vendor $(BUILD_FLAGS) -o build/gaiacli.exe ./cmd/gaia/cmd/gaiacli
 else
-	go build $(BUILD_FLAGS) -mod vendor -o build/gaiad ./cmd/gaia/cmd/gaiad
-	go build $(BUILD_FLAGS) -mod vendor -o build/gaiacli ./cmd/gaia/cmd/gaiacli
-	go build $(BUILD_FLAGS) -mod vendor -o build/gaiareplay ./cmd/gaia/cmd/gaiareplay
-	go build $(BUILD_FLAGS) -mod vendor -o build/gaiakeyutil ./cmd/gaia/cmd/gaiakeyutil
+	go build -mod=vendor $(BUILD_FLAGS) -mod vendor -o build/gaiad ./cmd/gaia/cmd/gaiad
+	go build -mod=vendor $(BUILD_FLAGS) -mod vendor -o build/gaiacli ./cmd/gaia/cmd/gaiacli
+	go build -mod=vendor $(BUILD_FLAGS) -mod vendor -o build/gaiareplay ./cmd/gaia/cmd/gaiareplay
+	go build -mod=vendor $(BUILD_FLAGS) -mod vendor -o build/gaiakeyutil ./cmd/gaia/cmd/gaiakeyutil
 endif
 
 build-linux: vendor-deps
@@ -88,10 +88,10 @@ update_gaia_lite_docs:
 	@statik -src=client/lcd/swagger-ui -dest=client/lcd -f
 
 install: vendor-deps check-ledger update_gaia_lite_docs
-	go install $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiad
-	go install $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiacli
-	go install $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiareplay
-	go install $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiakeyutil
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiad
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiacli
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiareplay
+	go install -mod=vendor $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiakeyutil
 
 install_debug:
 	go install $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiadebug
