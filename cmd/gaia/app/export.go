@@ -90,9 +90,9 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []st
 		return false
 	})
 	type RewardInfo struct{
-		delegatorAddress string  `json:"delegator_address"`
-		validatorAddress string`json:"validator_address"`
-		rewardCount string `json:"reward_amount"`
+		DelegatorAddress string  `json:"delegator_address"`
+		ValidatorAddress string`json:"validator_address"`
+		RewardCount string `json:"reward_amount"`
 	}
 	var rewardInfo []RewardInfo
 
@@ -102,10 +102,11 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []st
 
 		coins , _ := app.distrKeeper.WithdrawDelegationRewards(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
 		rewardInfo = append(rewardInfo, RewardInfo{
-			delegatorAddress: delegation.DelegatorAddress.String(),
-			validatorAddress: delegation.DelegatorAddress.String(),
-			rewardCount: coins.String(),
+			DelegatorAddress: delegation.DelegatorAddress.String(),
+			ValidatorAddress: delegation.ValidatorAddress.String(),
+			RewardCount: coins.String(),
 		})
+		fmt.Printf("delegator: %s, \n validator: %s, \n amount %s, \n\n", delegation.DelegatorAddress.String(), delegation.ValidatorAddress.String(), coins.String())
 	}
 	file, _ := json.Marshal(rewardInfo)
 	//file, _ := json.MarshalIndent(rewardInfo, "", " ")
