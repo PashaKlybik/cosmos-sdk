@@ -1,6 +1,7 @@
 package distribution
 
 import (
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 )
@@ -38,6 +39,7 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data types.GenesisState) {
 
 // ExportGenesis returns a GenesisState for a given context and keeper.
 func ExportGenesis(ctx sdk.Context, keeper Keeper) types.GenesisState {
+	fmt.Println("\n\njhskjahs\n\n")
 	feePool := keeper.GetFeePool(ctx)
 	communityTax := keeper.GetCommunityTax(ctx)
 	baseProposerRewards := keeper.GetBaseProposerReward(ctx)
@@ -84,7 +86,7 @@ func ExportGenesis(ctx sdk.Context, keeper Keeper) types.GenesisState {
 		},
 	)
 	cur := make([]types.ValidatorCurrentRewardsRecord, 0)
-	keeper.IterateValidatorCurrentRewards(ctx,
+		keeper.IterateValidatorCurrentRewards(ctx,
 		func(val sdk.ValAddress, rewards types.ValidatorCurrentRewards) (stop bool) {
 			cur = append(cur, types.ValidatorCurrentRewardsRecord{
 				ValidatorAddress: val,

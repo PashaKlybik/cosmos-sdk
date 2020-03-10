@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -88,9 +90,9 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []st
 		return false
 	})
 	type RewardInfo struct{
-		delegatorAddress string
-		validatorAddress string
-		rewardCount string
+		delegatorAddress string  `json:"delegator_address"`
+		validatorAddress string`json:"validator_address"`
+		rewardCount string `json:"reward_amount"`
 	}
 	var rewardInfo []RewardInfo
 
@@ -105,6 +107,11 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []st
 			rewardCount: coins.String(),
 		})
 	}
+	file, _ := json.Marshal(rewardInfo)
+	//file, _ := json.MarshalIndent(rewardInfo, "", " ")
+	_ = ioutil.WriteFile("test3.json", file, 0644)
+
+	fmt.Println("\n\n\nlololo\n\n\n\n")
 
 	// clear validator slash events
 	app.distrKeeper.DeleteAllValidatorSlashEvents(ctx)
