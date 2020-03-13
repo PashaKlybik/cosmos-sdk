@@ -48,7 +48,7 @@ func handleMsgWithdrawDelegatorReward(ctx sdk.Context, msg types.MsgWithdrawDele
 	var logInfo string
 	if len(rewards.String())!=0 {
 		logInfo =  `"cosmoshub2/reward": [{"delegator_address":"` + msg.DelegatorAddress.String() +`", "validator_address": "` +
-			msg.DelegatorAddress.String() +`", "amount": "` +rewards.String() +  `"}]`
+			msg.ValidatorAddress.String() +`", "amount": "` +rewards.String() +  `"}]`
 	}
 
 	return sdk.Result{
