@@ -9,11 +9,11 @@ require (
 	github.com/cosmos/go-bip39 v0.0.0-20180618194314-52158e4697b8
 	github.com/cosmos/ledger-cosmos-go v0.10.3
 	github.com/fortytw2/leaktest v1.3.0 // indirect
-	github.com/gogo/protobuf v1.3.0
-	github.com/golang/mock v1.3.1-0.20190508161146-9fa652df1129 // indirect
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.3.2
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/gorilla/mux v1.7.0
+	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/mattn/go-isatty v0.0.6
 	github.com/otiai10/copy v0.0.0-20180813032824-7e9a647135a1
 	github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95 // indirect
@@ -29,14 +29,14 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.4.0
-	github.com/stumble/gorocksdb v0.0.3 // indirect
+	github.com/syndtr/goleveldb v1.0.1-0.20190318030020-c3a204f8e965 // indirect
 	github.com/tendermint/btcd v0.1.1
-	github.com/tendermint/crypto v0.0.0-20180820045704-3764759f34a5 // indirect
 	github.com/tendermint/go-amino v0.15.0
 	github.com/tendermint/iavl v0.12.2
 	github.com/tendermint/tendermint v0.31.5
-	github.com/tendermint/tm-db v0.1.1 // indirect
-	golang.org/x/crypto v0.0.0-20190313024323-a1f597ede03a // indirect
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	google.golang.org/genproto v0.0.0-20181029155118-b69ba1387ce2 // indirect
+	google.golang.org/grpc v1.22.0 // indirect
 )
 
 go 1.13
